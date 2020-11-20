@@ -6,8 +6,7 @@ export function signTemporaryToken(userInfo) {
       userInfo,
       process.env.JWT_SECRET,
       {
-        algorithm: 'HS256',
-        expiresIn: 180
+        algorithm: 'HS256'
       },
       (err, token) => {
         if (err) reject(err);
