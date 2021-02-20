@@ -13,6 +13,16 @@ export async function retrieveToken(code) {
   return tokenResp.data;
 }
 
+export async function refreshToken(refreshToken) {
+  const query = querystring.stringify({
+    client_id: process.env.FIGMA_ID,
+    client_secret: process.env.FIGMA_SECRET,
+    refresh_token: refreshToken
+  });
+  const tokenResp = await axios.post(`https://www.figma.com/api/oauth/refresh?${query}`);
+  return tokenResp.data;
+}
+
 export function createInstance(token) {
   const figma = axios.create({
     baseURL: 'https://api.figma.com/v1',

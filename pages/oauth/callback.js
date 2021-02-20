@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import styled from 'styled-components';
 import copy from 'copy-to-clipboard';
 import { retrieveToken, createInstance } from '../../side-effects/figma';
+import { firestore } from '../../side-effects/firebaseAdmin';
 import { signTemporaryToken } from '../../side-effects/jwt';
 
 const Wrapper = styled.div`
@@ -148,10 +149,9 @@ const OAuthCallback = ({ error, message, stack, temporaryToken }) => {
 };
 
 export async function getServerSideProps(context) {
-  let figmaToken;
+  let tokenResp;
   try {
-    const tokenResp = await retrieveToken(context.query.code);
-    figmaToken = tokenResp.access_token;
+    tokenResp = await retrieveToken(context.query.code);
   } catch (err) {
     return {
       props: {
@@ -163,8 +163,19 @@ export async function getServerSideProps(context) {
   }
 
   try {
-    const figma = createInstance(figmaToken);
+    const figma = createInstance(tokenResp.access_token);
     const { data } = await figma.get('/me');
+    await firestore
+      .collection('users')
+      .doc(data.id)
+      .set({
+        ...data,
+        figma: {
+          accessToken: tokenResp.access_token,
+          expiresIn: tokenResp.expires_in,
+          refreshToken: tokenResp.refresh_token
+        }
+      });
     const temporaryToken = await signTemporaryToken(data);
 
     return {
