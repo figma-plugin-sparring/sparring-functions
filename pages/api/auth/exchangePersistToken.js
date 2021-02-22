@@ -12,22 +12,20 @@ export default async function exchangePersistTokenHandler(req, res) {
       const userInfo = await verifyTemporaryToken(req.body.temporaryToken);
       const persistToken = await auth.createCustomToken(userInfo.id);
       const userSnapshot = await firestore.collection('users').doc(userInfo.id).get();
-      const { figma, ...user } = userSnapshot.data();
-      const refreshTokenResp = await refreshToken(figma.refreshToken);
-      await firestore
-        .collection('users')
-        .doc(userInfo.id)
-        .update({
-          figma: {
-            accessToken: refreshTokenResp.access_token,
-            expiresIn: refreshTokenResp.expires_in,
-            refreshToken: figma.refreshToken
-          }
-        });
+      let { figma, ...user } = userSnapshot.data();
+      if (figma.expiresAt - Date.now() < 86400000) {
+        const refreshTokenResp = await refreshToken(figma.refreshToken);
+        figma = {
+          ...figma,
+          accessToken: refreshTokenResp.access_token,
+          expiresAt: Date.now() + refreshTokenResp.expires_in * 1000
+        };
+        await firestore.collection('users').doc(userInfo.id).update({ figma });
+      }
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.status(200).json({
         user,
-        figmaToken: refreshTokenResp.access_token,
+        figmaToken: figma.accessToken,
         firebaseToken: persistToken
       });
       break;

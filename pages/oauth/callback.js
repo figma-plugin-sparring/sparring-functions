@@ -172,7 +172,7 @@ export async function getServerSideProps(context) {
         ...data,
         figma: {
           accessToken: tokenResp.access_token,
-          expiresIn: tokenResp.expires_in,
+          expiresAt: Date.now() + tokenResp.expires_in * 1000,
           refreshToken: tokenResp.refresh_token
         }
       });
