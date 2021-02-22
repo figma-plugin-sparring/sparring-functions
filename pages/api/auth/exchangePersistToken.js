@@ -11,7 +11,8 @@ export default async function exchangePersistTokenHandler(req, res) {
     case 'POST':
       const userInfo = await verifyTemporaryToken(req.body.temporaryToken);
       const persistToken = await auth.createCustomToken(userInfo.id);
-      const { figma } = await firestore.collection('users').doc(userInfo.id).get();
+      const userSnapshot = await firestore.collection('users').doc(userInfo.id).get();
+      const { figma, ...user } = userSnapshot.data();
       const refreshTokenResp = await refreshToken(figma.refreshToken);
       await firestore
         .collection('users')
@@ -24,7 +25,11 @@ export default async function exchangePersistTokenHandler(req, res) {
           }
         });
       res.setHeader('Access-Control-Allow-Origin', '*');
-      res.status(200).json({ persistToken });
+      res.status(200).json({
+        user,
+        figmaToken: refreshTokenResp.access_token,
+        firebaseToken: persistToken
+      });
       break;
 
     default:
