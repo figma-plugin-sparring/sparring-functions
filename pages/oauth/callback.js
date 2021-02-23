@@ -170,6 +170,7 @@ export async function getServerSideProps(context) {
       .collection('users')
       .doc(userData.id)
       .set({
+        userId: userData.id,
         name: userData.handle,
         avatar: userData.img_url,
         figma: {

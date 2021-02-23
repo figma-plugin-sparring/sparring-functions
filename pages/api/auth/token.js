@@ -27,6 +27,9 @@ export default async function tokenHandler(req, res) {
       }
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.status(200).json({
+        userId: user.userId,
+        name: user.name,
+        avatar: user.avatar,
         figmaToken: user.figma.accessToken,
         firebaseToken: await auth.createCustomToken(userId)
       });
