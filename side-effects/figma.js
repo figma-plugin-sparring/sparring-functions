@@ -1,7 +1,7 @@
 import axios from 'axios';
 import querystring from 'querystring';
 
-export async function retrieveToken(code) {
+export function retrieveToken(code) {
   const query = querystring.stringify({
     client_id: process.env.FIGMA_ID,
     client_secret: process.env.FIGMA_SECRET,
@@ -9,18 +9,16 @@ export async function retrieveToken(code) {
     code,
     grant_type: 'authorization_code'
   });
-  const tokenResp = await axios.post(`https://www.figma.com/api/oauth/token?${query}`);
-  return tokenResp.data;
+  return axios.post(`https://www.figma.com/api/oauth/token?${query}`);
 }
 
-export async function refreshToken(refreshToken) {
+export function refreshToken(refreshToken) {
   const query = querystring.stringify({
     client_id: process.env.FIGMA_ID,
     client_secret: process.env.FIGMA_SECRET,
     refresh_token: refreshToken
   });
-  const tokenResp = await axios.post(`https://www.figma.com/api/oauth/refresh?${query}`);
-  return tokenResp.data;
+  return axios.post(`https://www.figma.com/api/oauth/refresh?${query}`);
 }
 
 export function createInstance(token) {

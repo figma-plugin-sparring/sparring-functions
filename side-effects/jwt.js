@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 
-export function signTemporaryToken(userInfo) {
+export function signToken(userInfo) {
   return new Promise((resolve, reject) => {
     jwt.sign(
       userInfo,
@@ -16,7 +16,7 @@ export function signTemporaryToken(userInfo) {
   });
 }
 
-export function verifyTemporaryToken(token) {
+export function verifyToken(token) {
   return new Promise((resolve, reject) => {
     jwt.verify(token, process.env.JWT_SECRET, (err, userInfo) => {
       if (err) reject(err);

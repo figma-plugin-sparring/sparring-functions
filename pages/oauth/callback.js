@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import copy from 'copy-to-clipboard';
 import { retrieveToken, createInstance } from '../../side-effects/figma';
 import { firestore } from '../../side-effects/firebaseAdmin';
-import { signTemporaryToken } from '../../side-effects/jwt';
+import { signToken } from '../../side-effects/jwt';
 
 const Wrapper = styled.div`
   width: 460px;
@@ -105,18 +105,18 @@ const Token = styled.textarea`
   line-height: 14px;
 `;
 
-const OAuthCallback = ({ error, message, stack, temporaryToken }) => {
+const OAuthCallback = ({ error, message, stack, token }) => {
   const [isTokenOpen, setIsTokenOpen] = useState(false);
   const onToggleToken = useCallback(e => {
     setIsTokenOpen(bool => !bool);
   }, []);
   const onCopyToken = useCallback(
     e => {
-      copy(temporaryToken, {
+      copy(token, {
         format: 'text/plain'
       });
     },
-    [temporaryToken]
+    [token]
   );
 
   if (error) {
@@ -143,15 +143,16 @@ const OAuthCallback = ({ error, message, stack, temporaryToken }) => {
       <TokenExpand open={isTokenOpen} onClick={onToggleToken}>
         Token
       </TokenExpand>
-      {isTokenOpen && <Token defaultValue={temporaryToken} disabled={true} />}
+      {isTokenOpen && <Token defaultValue={token} disabled={true} />}
     </Wrapper>
   );
 };
 
 export async function getServerSideProps(context) {
-  let tokenResp;
+  let tokenData;
   try {
-    tokenResp = await retrieveToken(context.query.code);
+    const tokenResp = await retrieveToken(context.query.code);
+    tokenData = tokenResp.data;
   } catch (err) {
     return {
       props: {
@@ -163,24 +164,27 @@ export async function getServerSideProps(context) {
   }
 
   try {
-    const figma = createInstance(tokenResp.access_token);
-    const { data } = await figma.get('/me');
+    const figma = createInstance(tokenData.access_token);
+    const { data: userData } = await figma.get('/me');
     await firestore
       .collection('users')
-      .doc(data.id)
+      .doc(userData.id)
       .set({
-        ...data,
+        name: userData.handle,
+        avatar: userData.img_url,
         figma: {
-          accessToken: tokenResp.access_token,
-          expiresAt: Date.now() + tokenResp.expires_in * 1000,
-          refreshToken: tokenResp.refresh_token
+          accessToken: tokenData.access_token,
+          expiresAt: Date.now() + tokenData.expires_in * 1000,
+          refreshToken: tokenData.refresh_token
         }
       });
-    const temporaryToken = await signTemporaryToken(data);
+    const token = await signToken({
+      userId: userData.id
+    });
 
     return {
       props: {
-        temporaryToken
+        token
       }
     };
   } catch (err) {
