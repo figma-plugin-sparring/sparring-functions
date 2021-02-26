@@ -17,12 +17,12 @@ export default async function tokenHandler(req, res) {
         await firestore
           .collection('users')
           .doc(userId)
-          .update({
-            figma: {
-              accessToken: refreshTokenData.access_token,
-              expiresAt: Date.now() + refreshTokenData.expires_in * 1000,
-              refreshToken: user.figma.refreshToken
-            }
+          .collection('private')
+          .doc('figma')
+          .set({
+            accessToken: refreshTokenData.access_token,
+            expiresAt: Date.now() + refreshTokenData.expires_in * 1000,
+            refreshToken: user.figma.refreshToken
           });
       }
       res.setHeader('Access-Control-Allow-Origin', '*');

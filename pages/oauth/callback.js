@@ -166,19 +166,21 @@ export async function getServerSideProps(context) {
   try {
     const figma = createInstance(tokenData.access_token);
     const { data: userData } = await figma.get('/me');
-    await firestore
-      .collection('users')
-      .doc(userData.id)
-      .set({
-        userId: userData.id,
-        name: userData.handle,
-        avatar: userData.img_url,
-        figma: {
-          accessToken: tokenData.access_token,
-          expiresAt: Date.now() + tokenData.expires_in * 1000,
-          refreshToken: tokenData.refresh_token
-        }
-      });
+    const batch = firestore.batch();
+    const userRef = firestore.collection('users').doc(userData.id);
+    const privateRef = firestore.collection('users').doc(userData.id).collection('private').doc('figma');
+    batch.set(userRef, {
+      userId: userData.id,
+      name: userData.handle,
+      avatar: userData.img_url
+    });
+    batch.set(privateRef, {
+      accessToken: tokenData.access_token,
+      expiresAt: Date.now() + tokenData.expires_in * 1000,
+      refreshToken: tokenData.refresh_token
+    });
+    await batch.commit();
+
     const token = await signToken({
       userId: userData.id
     });
